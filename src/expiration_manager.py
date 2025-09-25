@@ -1,49 +1,62 @@
 import time
 import threading
-from collections.abc import MutableMapping
 
-class ExpiringDict(MutableMapping):
-    def __init__(self, ttl_seconds, cleanup_interval=1.0):
-        self._data = {}
-        self._ttl = float(ttl_seconds)
+class ExpiringDict():
+    def __init__(self, default_ttl: float = None, cleanup_interval: float = 1.0):
+        self._store = {}
+        self.default_ttl = default_ttl # Time-to-live in seconds
+        self.cleanup_interval = cleanup_interval
         self._lock = threading.Lock()
-        self._stop = threading.Event()
-        self._thread = threading.Thread(target=self._cleaner, daemon=True,
-                                        args=(cleanup_interval,))
+        self._stop_event = threading.Event()
+        
+        # Start the cleanup thread
+        self._thread = threading.Thread(target= self._auto_cleanup, daemon=True)
         self._thread.start()
-
-    def _cleaner(self, interval):
-        while not self._stop.wait(interval):
-            now = time.time()
-            with self._lock:
-                for k, (v, exp) in list(self._data.items()):
-                    if exp < now:
-                        del self._data[k]
-
-    def __setitem__(self, key, value):
+        
+    def set(self, key, value, ttl: float = None):
+        expiry = None
+        ttl = ttl if ttl is not None else self.default_ttl
+        if ttl is not None:
+            expiry = time.time() + ttl
         with self._lock:
-            self._data[key] = (value, time.time() + self._ttl)
-
-    def __getitem__(self, key):
+            self._store[key] = (value, expiry)
+            
+    def get(self, key, default=None):
         with self._lock:
-            val, exp = self._data[key]
-            if exp < time.time():
-                del self._data[key]
-                raise KeyError(key)
-            return val
-
-    def __delitem__(self, key):
+            item = self._store.get(key)
+            # If key is missing, return default
+            if item is None:
+                return default
+            # Unpack stored tuple (value, expiry)
+            value, expiry = item
+            if expiry is None or expiry > time.time():
+                return value
+            else:
+                # expired
+                del self._store[key]
+                return default
+            
+    def __contains__(self, key):
+        return self.get(key) is not None
+    
+    def cleanup(self):
+        """Remove expired items from the store."""
+        now = time.time()
         with self._lock:
-            del self._data[key]
-
-    def __iter__(self):
-        with self._lock:
-            return iter([k for k, (_, exp) in self._data.items() if exp >= time.time()])
-
-    def __len__(self):
-        with self._lock:
-            return sum(1 for _, exp in self._data.values() if exp >= time.time())
-
-    def close(self):
-        self._stop.set()
-        self._thread.join()
+            expired = [k for k, (_, expiry) in self._store.items() if expiry and expiry <= now]
+            for k in expired:
+                del self._store[k]
+                
+    def _auto_cleanup(self):
+        """Background loop cleanup"""
+        while not self._stop_event.is_set():
+            self.cleanup()
+            time.sleep(self.cleanup_interval)
+            
+    def stop(self):
+        """Stop the background cleanup thread."""
+        self._stop_event.set()
+        self._thread.join() 
+        
+    def __repr__(self):
+        return f"ExpiringDict({self._store})"

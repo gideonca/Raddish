@@ -1,8 +1,10 @@
 import socket
 import threading
+import time
+from src.expiration_manager import ExpiringDict
 
 # a simple in memory-store
-store = {}
+store = ExpiringDict()
 
 def handle_client_connection(client_socket):
     with client_socket:
@@ -36,7 +38,7 @@ def handle_client_connection(client_socket):
                     client_socket.sendall(f'{message}\n'.encode('utf-8'))
                 case 'SET':
                     key, value = command_parts[1], command_parts[2]
-                    store[key] = value
+                    store.set(key, value)
                     client_socket.sendall(b'OK\n')
                 case 'GET':
                     key = command_parts[1]
@@ -49,13 +51,20 @@ def handle_client_connection(client_socket):
                         client_socket.sendall(b'OK\n')
                     else:
                         client_socket.sendall(b'NULL\n')
+                case 'EXPIRE':
+                    key, ttl = command_parts[1], int(command_parts[2])
+                    if key in store:
+                        value = store.get(key)
+                        store.set(key, value, ttl=ttl)
+                        client_socket.sendall(b'OK\n')
                 case _:
                     client_socket.sendall(b'ERROR: Unknown command\n')
-                
+        client_socket.close()
+        
 def validate_command(command_parts):
     if(not command_parts):
         return False, 'ERROR: Empty command'
-    elif(command_parts[0].upper() in ('PING', 'EXIT')):
+    elif(command_parts[0].upper() in ('PING', 'EXIT', 'EXPIRE')):
         return True
     elif(len(command_parts) < 2):
         return False, 'ERROR: Not enough arguments'

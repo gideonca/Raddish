@@ -2,10 +2,10 @@
   - [x] Bind to a port
   - [x] Respond to PING (PING)
   - [x] Respond to multiple PINGs 
-  - [ ] Handle concurrent clients (event loop)
+  - [x] Handle concurrent clients (event loop)
   - [x] Implement the ECHO command (ECHO)
   - [x] Implement the SET & GET commands (SET & GET)
-  - [ ] Expiry (Add PX argument to SET command)
+  - [x] Expiry (Add PX argument to SET command)
 
 # Lists
   - [ ] Create a list (RPUSH -> Return num elements as RESP int)
