@@ -1,7 +1,7 @@
 # Commands
   * Test: python3 -m unittest discover tests
 
-## TODO List
+# TODO List
 # Introduction
   - [x] Bind to a port
   - [x] Respond to PING (PING)

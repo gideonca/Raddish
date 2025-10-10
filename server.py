@@ -60,6 +60,10 @@ def handle_client_connection(client_socket):
                         value = store.get(key)
                         store.set(key, value, ttl=ttl)
                         client_socket.sendall(b'OK\n')
+                case 'RPUSH':
+                    key, value = command_parts[1], command_parts[2]
+                    store.prepend(key, value)
+                    client_socket.sendall(b'OK\n')
                 case _:
                     client_socket.sendall(b'ERROR: Unknown command\n')
         client_socket.close()

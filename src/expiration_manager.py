@@ -36,6 +36,21 @@ class ExpiringDict():
                 del self._store[key]
                 return default
             
+    def prepend(self, key, value, ttl: float = None):
+        """Prepend a value to the store, maintaining order."""
+        with self._lock:
+            # Create a new dict with the new key-value pair at the front
+            self._store = { key: (value, ttl), **self._store }
+            
+    def keys(self):
+        """_summary_
+            Creates a list of all non-expired keys in the store.
+        Returns:
+            _list_: List of non-expired keys
+        """
+        self.cleanup()
+        return list(self._store.keys())
+            
     def __contains__(self, key):
         return self.get(key) is not None
 
@@ -67,3 +82,8 @@ class ExpiringDict():
         
     def __repr__(self):
         return f"ExpiringDict({self._store})"
+    
+    def clear(self):
+        """Clear all items from the store."""
+        with self._lock:
+            self._store.clear()
