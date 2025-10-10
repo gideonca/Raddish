@@ -38,6 +38,13 @@ class ExpiringDict():
             
     def __contains__(self, key):
         return self.get(key) is not None
+
+    def __delitem__(self, key):
+        with self._lock:
+            if key in self._store:
+                del self._store[key]
+            else:
+                raise KeyError(key)
     
     def cleanup(self):
         """Remove expired items from the store."""

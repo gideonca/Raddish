@@ -24,10 +24,13 @@ def handle_client_connection(client_socket):
                 client_socket.sendall(b'Goodbye!\n')
                 break
             
-            # Basic command validation, ensuring enough arguments
+            # Basic command validation
             if not validate_command(command_parts):
-                break;
-                
+                if command not in ('PING', 'EXIT', 'SET', 'GET', 'DEL', 'EXPIRE', 'ECHO'):
+                    client_socket.sendall(b'ERROR: Unknown command\n')
+                else:
+                    client_socket.sendall(b'ERROR: Invalid command or insufficient arguments\n')
+                continue
             
             # TODO: Move to a parser module
             match command:
@@ -62,13 +65,22 @@ def handle_client_connection(client_socket):
         client_socket.close()
         
 def validate_command(command_parts):
-    if(not command_parts):
-        return False, 'ERROR: Empty command'
-    elif(command_parts[0].upper() in ('PING', 'EXIT', 'EXPIRE')):
+    if not command_parts:
+        return False
+    
+    command = command_parts[0].upper()
+    if command in ('PING', 'EXIT'):
         return True
-    elif(len(command_parts) < 2):
-        return False, 'ERROR: Not enough arguments'
-    return True, ''
+    elif command == 'EXPIRE' and len(command_parts) >= 3:
+        return True
+    elif command in ('SET',) and len(command_parts) >= 3:
+        return True
+    elif command in ('GET', 'DEL') and len(command_parts) >= 2:
+        return True
+    elif command == 'ECHO' and len(command_parts) >= 2:
+        return True
+    
+    return False
 
 def start_server(host='127.0.0.1', port=6379):
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
