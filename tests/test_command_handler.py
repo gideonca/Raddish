@@ -40,6 +40,18 @@ class TestCommandHandler(unittest.TestCase):
         self.handler.handle_command(['GET', 'mykey'], self.send_response)
         self.assertEqual(self.responses[-1], 'NULL\n')
         
+    def test_lpop(self):
+        # Set a value first
+        self.handler.handle_command(['SET', 'mykey', 'myvalue'], self.send_response)
+        
+        # LPOP it
+        self.handler.handle_command(['LPOP', 'mykey'], self.send_response)
+        self.assertEqual(self.responses[-1], 'OK\n')
+        
+        # Try to get deleted key
+        self.handler.handle_command(['GET', 'mykey'], self.send_response)
+        self.assertEqual(self.responses[-1], 'NULL\n')
+        
     def test_expire(self):
         # Set a value
         self.handler.handle_command(['SET', 'mykey', 'myvalue'], self.send_response)
