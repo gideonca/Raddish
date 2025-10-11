@@ -1,5 +1,7 @@
 # Commands
   * Test: python3 -m unittest discover tests
+  * Start: python server.py
+           telnet localhost 6379
 
 # TODO List
 # Introduction

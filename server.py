@@ -26,11 +26,7 @@ def handle_client_connection(client_socket):
             
             # Basic command validation
             if not validate_command(command_parts):
-                if command not in ('PING', 'EXIT', 'SET', 'GET', 'DEL', 'EXPIRE', 'ECHO'):
-                    client_socket.sendall(b'ERROR: Unknown command\n')
-                else:
-                    client_socket.sendall(b'ERROR: Invalid command or insufficient arguments\n')
-                continue
+                client_socket.sendall(b'ERROR: Invalid command or insufficient arguments\n')
             
             # TODO: Move to a parser module
             match command:
@@ -60,10 +56,19 @@ def handle_client_connection(client_socket):
                         value = store.get(key)
                         store.set(key, value, ttl=ttl)
                         client_socket.sendall(b'OK\n')
-                case 'RPUSH':
+                case 'LPUSH':
                     key, value = command_parts[1], command_parts[2]
                     store.prepend(key, value)
                     client_socket.sendall(b'OK\n')
+                case 'RPUSH':
+                    key, value = command_parts[1], command_parts[2]
+                    store.set(key, value)
+                    client_socket.sendall(b'OK\n')
+                case 'INSPECT':
+                    for k in store.keys():
+                        v = store.get(k)
+                        client_socket.sendall(f'{k}: {v}\n'.encode('utf-8'))
+                    client_socket.sendall(b'END\n')
                 case _:
                     client_socket.sendall(b'ERROR: Unknown command\n')
         client_socket.close()
@@ -82,6 +87,12 @@ def validate_command(command_parts):
     elif command in ('GET', 'DEL') and len(command_parts) >= 2:
         return True
     elif command == 'ECHO' and len(command_parts) >= 2:
+        return True
+    elif command == 'LPUSH' and len(command_parts) >= 3:
+        return True
+    elif command == 'RPUSH' and len(command_parts) >= 3:
+        return True
+    elif command == 'INSPECT':
         return True
     
     return False
