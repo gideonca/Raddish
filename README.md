@@ -14,14 +14,14 @@
   - [x] Expiry (Add PX argument to SET command)
 
 # Lists
-  - [ ] Create a list (RPUSH -> Return num elements as RESP int)
-  - [ ] Append an element (existing list support for RPUSH)
+  - [x] Create a list (RPUSH -> Return num elements as RESP int)
+  - [x] Append an element (existing list support for RPUSH)
   - [ ] Append multiple elements 
   - [ ] List elements (positive indexes) (LRANGE w/ start and end index)
   - [ ] List elements (negative indexes) (See above, get abs val)
-  - [ ] Prepend elements (LPUSH -> Inserts right to left rather than left to right)
+  - [x] Prepend elements (LPUSH -> Inserts right to left rather than left to right)
   - [ ] Query list length (LLEN)
-  - [ ] Remove an element (LPOP)
+  - [x] Remove an element (LPOP)
   - [ ] Remove multiple elements
   - [ ] Blocking retrieval (BLPOP)
   - [ ] Blocking retrieval with timeout (BLPOP with PX)

@@ -2,6 +2,7 @@ import socket
 import threading
 import time
 from src.expiration_manager import ExpiringDict
+from src.validator import validate_command
 
 # a simple in memory-store
 store = ExpiringDict()
@@ -24,9 +25,11 @@ def handle_client_connection(client_socket):
                 client_socket.sendall(b'Goodbye!\n')
                 break
             
-            # Basic command validation
-            if not validate_command(command_parts):
-                client_socket.sendall(b'ERROR: Invalid command or insufficient arguments\n')
+            # Command validation with specific error messages
+            is_valid, error_msg = validate_command(command_parts)
+            if not is_valid:
+                client_socket.sendall(f'ERROR: {error_msg}\n'.encode('utf-8'))
+                continue
             
             # TODO: Move to a parser module
             match command:
@@ -43,7 +46,7 @@ def handle_client_connection(client_socket):
                     key = command_parts[1]
                     value = store.get(key, 'NULL')
                     client_socket.sendall(f'{value}\n'.encode('utf-8'))
-                case 'DEL':
+                case 'DEL' | 'LPOP':
                     key = command_parts[1]
                     if key in store:
                         del store[key]
@@ -72,30 +75,6 @@ def handle_client_connection(client_socket):
                 case _:
                     client_socket.sendall(b'ERROR: Unknown command\n')
         client_socket.close()
-        
-def validate_command(command_parts):
-    if not command_parts:
-        return False
-    
-    command = command_parts[0].upper()
-    if command in ('PING', 'EXIT'):
-        return True
-    elif command == 'EXPIRE' and len(command_parts) >= 3:
-        return True
-    elif command in ('SET',) and len(command_parts) >= 3:
-        return True
-    elif command in ('GET', 'DEL') and len(command_parts) >= 2:
-        return True
-    elif command == 'ECHO' and len(command_parts) >= 2:
-        return True
-    elif command == 'LPUSH' and len(command_parts) >= 3:
-        return True
-    elif command == 'RPUSH' and len(command_parts) >= 3:
-        return True
-    elif command == 'INSPECT':
-        return True
-    
-    return False
 
 def start_server(host='127.0.0.1', port=6379):
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
