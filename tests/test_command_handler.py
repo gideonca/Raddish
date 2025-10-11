@@ -1,10 +1,10 @@
 import unittest
-from src.expiration_manager import ExpiringDict
+from src.expiring_store import ExpiringStore
 from src.command_handler import CommandHandler
 
 class TestCommandHandler(unittest.TestCase):
     def setUp(self):
-        self.store = ExpiringDict()
+        self.store = ExpiringStore()
         self.handler = CommandHandler(self.store)
         self.responses = []
         

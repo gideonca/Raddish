@@ -3,11 +3,11 @@ Command handler for the Reddish server.
 Handles execution of Redis-like commands.
 """
 from typing import List, Optional, Any
-from .expiration_manager import ExpiringDict
+from .expiring_store import ExpiringStore
 from .validator import validate_command
 
 class CommandHandler:
-    def __init__(self, store: ExpiringDict):
+    def __init__(self, store: ExpiringStore):
         self.store = store
 
     def handle_command(self, command_parts: List[str], send_response) -> bool:

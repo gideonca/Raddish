@@ -1,10 +1,10 @@
 import socket
 import threading
-from src.expiration_manager import ExpiringDict
+from src.expiring_store import ExpiringStore
 from src.command_handler import CommandHandler
 
 # Initialize store and command handler
-store = ExpiringDict()
+store = ExpiringStore()
 command_handler = CommandHandler(store)
 
 def handle_client_connection(client_socket):

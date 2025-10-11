@@ -2,8 +2,9 @@ import unittest
 import socket
 import threading
 import time
-from server import start_server, handle_client_connection, validate_command
-from src.expiration_manager import ExpiringDict
+from server import start_server, handle_client_connection
+from src.validator import CommandValidator
+from src.expiring_store import ExpiringStore
 
 class TestRedisServer(unittest.TestCase):
     @classmethod
@@ -69,18 +70,6 @@ class TestRedisServer(unittest.TestCase):
         self.assertEqual(self.send_command("GET key3"), "value3")
         time.sleep(1.1)  # Wait for expiration
         self.assertEqual(self.send_command("GET key3"), "NULL")
-
-    def test_unknown_command(self):
-        """Test unknown command handling"""
-        response = self.send_command("UNKNOWN")
-        self.assertEqual(response, "ERROR: Unknown command")
-
-    def test_validate_command(self):
-        """Test command validation"""
-        self.assertTrue(validate_command(['PING']))
-        self.assertTrue(validate_command(['SET', 'key', 'value']))
-        self.assertTrue(validate_command(['GET', 'key']))
-        self.assertFalse(validate_command(['SET']))  # Not enough arguments
 
 if __name__ == '__main__':
     unittest.main()

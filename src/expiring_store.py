@@ -1,7 +1,7 @@
 import time
 import threading
 
-class ExpiringDict():
+class ExpiringStore():
     def __init__(self, default_ttl: float = None, cleanup_interval: float = 1.0):
         self._store = {}
         self.default_ttl = default_ttl # Time-to-live in seconds
@@ -81,7 +81,7 @@ class ExpiringDict():
         self._thread.join() 
         
     def __repr__(self):
-        return f"ExpiringDict({self._store})"
+        return f"ExpiringStore({self._store})"
     
     def clear(self):
         """Clear all items from the store."""

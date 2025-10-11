@@ -1,10 +1,10 @@
 import unittest
 import time
-from src.expiration_manager import ExpiringDict
+from src.expiring_store import ExpiringStore
 
-class TestExpiringDict(unittest.TestCase):
+class TestExpiringStore(unittest.TestCase):
     def setUp(self):
-        self.store = ExpiringDict()
+        self.store = ExpiringStore()
 
     def tearDown(self):
         self.store.stop()
@@ -51,14 +51,14 @@ class TestExpiringDict(unittest.TestCase):
 
     def test_auto_cleanup(self):
         """Test automatic cleanup of expired keys"""
-        self.store = ExpiringDict(cleanup_interval=0.1)
+        self.store = ExpiringStore(cleanup_interval=0.1)
         self.store.set('key7', 'value7', ttl=0.1)
         time.sleep(0.3)  # Wait for auto cleanup
         self.assertIsNone(self.store.get('key7'))
 
     def test_default_ttl(self):
         """Test default TTL functionality"""
-        store = ExpiringDict(default_ttl=0.1)
+        store = ExpiringStore(default_ttl=0.1)
         store.set('key8', 'value8')  # Use default TTL
         self.assertEqual(store.get('key8'), 'value8')
         time.sleep(0.2)
