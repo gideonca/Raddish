@@ -29,7 +29,7 @@ class CommandValidator:
         
         Args:
             command_specs: Optional custom command specifications.
-                         If None, uses the default COMMAND_SPECS.
+                        If None, uses the default COMMAND_SPECS.
         """
         self.command_specs = command_specs or COMMAND_SPECS
 
