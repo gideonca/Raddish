@@ -1,7 +1,106 @@
-# Commands
-  * Test: python3 -m unittest discover tests
-  * Start: python server.py
-           telnet localhost 6379
+# Reddish
+
+A lightweight Redis-like in-memory data store implementation in Python. Reddish provides a thread-safe key-value store with automatic key expiration and a Redis-compatible command interface.
+
+## Features
+
+- In-memory key-value store
+- Automatic key expiration (TTL support)
+- Thread-safe operations
+- Background cleanup of expired keys
+- Redis-like command interface
+- TCP socket server for network access
+- Concurrent client support
+
+## Quick Start
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/gideonca/reddish.git
+cd reddish
+```
+
+2. (Optional) Create and activate a virtual environment:
+* note: there are no external packages in this project as of now
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
+```
+
+### Running
+
+1. Start the server:
+```bash
+python server.py
+```
+
+2. Connect using telnet in another terminal:
+```bash
+telnet localhost 6379
+```
+
+### Basic Usage
+
+```
+> PING
+PONG
+> SET mykey "Hello World"
+OK
+> GET mykey
+Hello World
+> EXPIRE mykey 10
+OK
+> EXIT
+Goodbye!
+```
+
+## Development
+
+Run the test suite:
+```bash
+python3 -m unittest discover tests
+```
+
+## Implementation Details
+
+- Written in pure Python
+- Uses threading for concurrency
+- Thread-safe operations using locks
+- Automatic background cleanup of expired keys
+- Network protocol similar to Redis
+
+## Project Structure
+
+```
+reddish/
+├── server.py              # Main server implementation
+├── src/
+│   ├── validator.py       # Command validation
+│   ├── command_handler.py # Command processing
+│   └── expiring_store.py  # Key-value store with TTL
+└── tests/                 # Unit tests
+```
+
+## Use Cases
+
+1. **Development and Testing**
+   - Local Redis replacement for development
+   - Testing Redis-dependent applications
+   - Learning Redis commands and behavior
+
+2. **Educational**
+   - Understanding key-value stores
+   - Learning about concurrent programming
+   - Studying Redis internals
+
+3. **Prototyping**
+   - Quick proof-of-concepts
+   - System architecture exploration
+   - Simple caching implementations
+
+## Current Features and Roadmap
 
 # TODO List
 # Introduction
