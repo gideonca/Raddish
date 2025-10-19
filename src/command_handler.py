@@ -42,6 +42,29 @@ class CommandHandler:
             'INSPECT': self._handle_inspect
         }
 
+    def _preprocess_set_command(self, command_parts: List[str]) -> List[str]:
+        """
+        Preprocess SET command to handle JSON values with spaces.
+        
+        Args:
+            command_parts: Original command parts
+            
+        Returns:
+            List[str]: Processed command parts with JSON value combined
+        """
+        if len(command_parts) < 3:
+            return command_parts
+            
+        # If this is a SET command with more parts than expected,
+        # combine all parts after the key into a single value
+        if command_parts[0].upper() == 'SET' and len(command_parts) > 3:
+            return [
+                command_parts[0],
+                command_parts[1],
+                ' '.join(command_parts[2:])
+            ]
+        return command_parts
+
     def handle_command(self, command_parts: List[str], send_response: Callable) -> bool:
         """
         Handle a command and send response through the callback.
@@ -56,6 +79,8 @@ class CommandHandler:
         if not command_parts:
             return True
 
+        # Preprocess command parts to handle JSON values with spaces
+        command_parts = self._preprocess_set_command(command_parts)
         command = command_parts[0].upper()
         
         if command == 'EXIT':

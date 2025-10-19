@@ -43,11 +43,79 @@ telnet localhost 6379
 
 ### Basic Usage
 
+The following examples show how to interact with Reddish using telnet:
+
+#### Basic Operations
 ```
 > PING
 PONG
+
+# Simple key-value operations
 > SET mykey "Hello World"
 OK
+> GET mykey
+Hello World
+> DEL mykey
+OK
+
+# Working with JSON data
+> SET users:1 {"name": "John", "age": 30}
+OK
+> GET users:1
+{"name": "John", "age": 30}
+
+# Setting expiration time (in seconds)
+> SET users:2 {"name": "Jane"}
+OK
+> EXPIRE users:2 60
+OK
+```
+
+#### Working with Lists
+```
+# Adding elements to a list
+> RPUSH mylist "first"
+OK
+> RPUSH mylist "second"
+OK
+> LPUSH mylist "start"
+OK
+
+# Removing elements
+> LPOP mylist
+start
+```
+
+#### Tips for JSON Data
+When working with JSON data, you can include spaces in your JSON strings - the server will handle them correctly:
+```
+# All of these formats work:
+> SET user:1 {"name":"John"}
+OK
+> SET user:2 {"name": "Jane", "age": 25}
+OK
+> SET user:3 {
+    "name": "Bob",
+    "age": 30,
+    "roles": ["admin", "user"]
+}
+OK
+```
+
+#### Available Commands
+- `PING` - Test server connection
+- `SET key value` - Set a key-value pair
+- `GET key` - Get value for a key
+- `DEL key` - Delete a key
+- `EXPIRE key seconds` - Set expiration time for a key
+- `LPUSH key value` - Push value to the start of a list
+- `RPUSH key value` - Push value to the end of a list
+- `LPOP key` - Remove and return the first element of a list
+- `EXIT` - Close the connection
+
+To exit the telnet session:
+1. Type `EXIT` command, or
+2. Press `Ctrl+]` and then type `quit`
 > GET mykey
 Hello World
 > EXPIRE mykey 10
