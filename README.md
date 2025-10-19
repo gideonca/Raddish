@@ -116,6 +116,98 @@ OK
 To exit the telnet session:
 1. Type `EXIT` command, or
 2. Press `Ctrl+]` and then type `quit`
+
+### Event System
+
+Reddish provides a powerful event system that lets you monitor and react to cache operations. Here's how to use it:
+
+#### Basic Event Handling
+```python
+from src.cache_handler import CacheHandler, CacheEvent, CacheEventContext
+
+# Create the cache handler
+cache = CacheHandler()
+
+# Monitor all SET operations
+def on_value_set(ctx: CacheEventContext):
+    print(f"New value in {ctx.cache_name}: {ctx.key} = {ctx.value}")
+
+cache.on(CacheEvent.SET, on_value_set)
+```
+
+#### Available Events
+- `CacheEvent.GET` - Triggered when retrieving a value
+- `CacheEvent.SET` - Triggered when setting a value
+- `CacheEvent.DELETE` - Triggered when deleting a key
+- `CacheEvent.EXPIRE` - Triggered when a key expires
+- `CacheEvent.CLEAR` - Triggered when clearing a cache
+- `CacheEvent.CREATE_CACHE` - Triggered when creating a new cache
+- `CacheEvent.DELETE_CACHE` - Triggered when deleting a cache
+
+#### Event Context
+Each event handler receives a `CacheEventContext` with:
+- `cache_name`: Name of the cache being operated on
+- `key`: Key being accessed/modified
+- `value`: New value (for SET events)
+- `old_value`: Previous value (for SET/DELETE)
+- `event_type`: Type of event
+- `timestamp`: When the event occurred
+
+#### Example Use Cases
+
+1. **Monitoring Cache Access**
+```python
+def log_access(ctx: CacheEventContext):
+    print(f"Cache accessed: {ctx.cache_name}.{ctx.key}")
+    
+# Monitor all GET operations
+cache.on(CacheEvent.GET, log_access)
+```
+
+2. **Cache-Specific Monitoring**
+```python
+def monitor_users(ctx: CacheEventContext):
+    print(f"User modified: {ctx.key}")
+    print(f"New data: {ctx.value}")
+    
+# Monitor only the "users" cache
+cache.on(CacheEvent.SET, monitor_users, cache_name="users")
+```
+
+3. **Statistics Collection**
+```python
+stats = {"sets": 0, "gets": 0, "deletes": 0}
+
+def collect_stats(ctx: CacheEventContext):
+    if ctx.event_type == CacheEvent.SET:
+        stats["sets"] += 1
+    elif ctx.event_type == CacheEvent.GET:
+        stats["gets"] += 1
+    elif ctx.event_type == CacheEvent.DELETE:
+        stats["deletes"] += 1
+
+# Monitor multiple events
+for event in [CacheEvent.SET, CacheEvent.GET, CacheEvent.DELETE]:
+    cache.on(event, collect_stats)
+```
+
+4. **Expiration Monitoring**
+```python
+def handle_expiry(ctx: CacheEventContext):
+    print(f"Key expired: {ctx.cache_name}.{ctx.key}")
+    # Perform cleanup or logging
+    
+cache.on(CacheEvent.EXPIRE, handle_expiry)
+```
+
+5. **Removing Event Handlers**
+```python
+# Stop monitoring when needed
+cache.off(CacheEvent.SET, monitor_users, cache_name="users")
+```
+
+#### Thread Safety
+All event handling methods are thread-safe and can be used safely in concurrent environments. Event handlers are executed synchronously in the thread that triggered the event.
 > GET mykey
 Hello World
 > EXPIRE mykey 10

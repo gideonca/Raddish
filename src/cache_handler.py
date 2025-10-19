@@ -225,18 +225,32 @@ class CacheHandler:
     def on(self, event: CacheEvent, callback: Callable[[CacheEventContext], None],
            cache_name: Optional[str] = None) -> None:
         """
-        Register an event handler.
+        Register an event handler for cache operations.
+        
+        This method allows you to register callback functions that will be executed
+        when specific cache events occur. Handlers can be registered globally for
+        all caches or specifically for a single cache.
         
         Args:
-            event: Event type to listen for
-            callback: Function to call when event occurs
-            cache_name: Optional cache name to filter events
-            
+            event: The CacheEvent type to listen for (GET, SET, DELETE, etc.)
+            callback: Function to be called when the event occurs. The function
+                     must accept a CacheEventContext parameter.
+            cache_name: Optional name of specific cache to monitor. If None,
+                       the handler will be called for events from all caches.
+        
         Example:
+            # Monitor all SET operations
             def on_set(ctx):
                 print(f"Value set in {ctx.cache_name}: {ctx.key} = {ctx.value}")
-            
             cache_handler.on(CacheEvent.SET, on_set)
+            
+            # Monitor GET operations only in "users" cache
+            def on_user_access(ctx):
+                print(f"User accessed: {ctx.key}")
+            cache_handler.on(CacheEvent.GET, on_user_access, cache_name="users")
+            
+        Thread Safety:
+            This method is thread-safe and can be called concurrently.
         """
         with self._lock:
             if cache_name:
@@ -252,10 +266,31 @@ class CacheHandler:
     def off(self, event: CacheEvent, callback: Callable[[CacheEventContext], None],
             cache_name: Optional[str] = None) -> bool:
         """
-        Remove an event handler.
+        Remove a previously registered event handler.
+        
+        This method allows you to unregister a callback function that was previously
+        registered using the 'on' method. The event type and cache name (if any)
+        must match the original registration.
+        
+        Args:
+            event: The CacheEvent type the handler was registered for
+            callback: The callback function to remove
+            cache_name: Optional cache name if the handler was registered for
+                       a specific cache
         
         Returns:
-            bool: True if handler was removed, False if not found
+            bool: True if the handler was successfully removed,
+                 False if the handler wasn't found
+                 
+        Example:
+            # Remove a global handler
+            cache_handler.off(CacheEvent.SET, on_set)
+            
+            # Remove a cache-specific handler
+            cache_handler.off(CacheEvent.GET, on_user_access, cache_name="users")
+            
+        Thread Safety:
+            This method is thread-safe and can be called concurrently.
         """
         with self._lock:
             try:
@@ -268,7 +303,25 @@ class CacheHandler:
                 return False
                 
     def _trigger_event(self, event: CacheEvent, context: CacheEventContext) -> None:
-        """Trigger event callbacks."""
+        """
+        Internal method to trigger event callbacks.
+        
+        This method is called internally when cache operations occur. It executes
+        all registered handlers for the event, both cache-specific and global.
+        
+        Args:
+            event: The CacheEvent that occurred
+            context: CacheEventContext containing details about the event
+            
+        Note:
+            - Handlers are executed synchronously in the current thread
+            - Exceptions in handlers are caught and suppressed to prevent
+              affecting cache operations
+            - Cache-specific handlers are executed before global handlers
+            
+        Thread Safety:
+            This method is thread-safe and can be called concurrently.
+        """
         with self._lock:
             # Call cache-specific handlers
             if context.cache_name:
