@@ -1,6 +1,6 @@
-# Reddish
+# Radish
 
-A lightweight Redis-like in-memory data store implementation in Python. Reddish provides a thread-safe key-value store with automatic key expiration and a Redis-compatible command interface.
+A lightweight Redis-like in-memory data store implementation in Python. Radish provides a thread-safe key-value store with automatic key expiration and a Redis-compatible command interface.
 
 ## Features
 
@@ -18,8 +18,8 @@ A lightweight Redis-like in-memory data store implementation in Python. Reddish 
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/gideonca/reddish.git
-cd reddish
+git clone https://github.com/gideonca/radish.git
+cd Radish
 ```
 
 2. (Optional) Create and activate a virtual environment:
@@ -43,7 +43,7 @@ telnet localhost 6379
 
 ### Basic Usage
 
-The following examples show how to interact with Reddish using telnet:
+The following examples show how to interact with Radish using telnet:
 
 #### Basic Operations
 ```
@@ -119,7 +119,7 @@ To exit the telnet session:
 
 ### Event System
 
-Reddish provides a powerful event system that lets you monitor and react to cache operations. Here's how to use it:
+Radish provides a powerful event system that lets you monitor and react to cache operations. Here's how to use it:
 
 #### Basic Event Handling
 ```python
@@ -234,13 +234,22 @@ python3 -m unittest discover tests
 ## Project Structure
 
 ```
-reddish/
-├── server.py              # Main server implementation
+radish/
+├── server.py                # Main server implementation
 ├── src/
-│   ├── validator.py       # Command validation
-│   ├── command_handler.py # Command processing
-│   └── expiring_store.py  # Key-value store with TTL
-└── tests/                 # Unit tests
+│   ├── validator.py         # Command validation
+│   ├── command_handler.py   # Command processing
+│   ├── cache_handler.py     # Cache management and events
+│   └── expiring_store.py    # Key-value store with TTL
+├── tests/
+│   ├── test_server.py           # Server tests
+│   ├── test_expiration.py       # Expiration tests
+│   ├── test_rpush.py           # RPUSH command tests
+│   ├── test_command_handler.py  # Command handler tests
+│   └── test_cache_handler.py    # Cache handler tests
+├── README.md                # Project documentation
+├── requirements.txt         # Project dependencies
+└── venv/                   # Virtual environment (optional)
 ```
 
 ## Use Cases
