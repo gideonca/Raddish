@@ -235,21 +235,21 @@ python3 -m unittest discover tests
 
 ```
 radish/
-├── server.py                # Main server implementation
+├── server.py                     # Main server implementation
 ├── src/
-│   ├── validator.py         # Command validation
-│   ├── command_handler.py   # Command processing
-│   ├── cache_handler.py     # Cache management and events
-│   └── expiring_store.py    # Key-value store with TTL
+│   ├── validator.py              # Command validation
+│   ├── command_handler.py        # Command processing
+│   ├── cache_handler.py          # Cache management and events
+│   └── expiring_store.py         # Key-value store with TTL
 ├── tests/
-│   ├── test_server.py           # Server tests
-│   ├── test_expiration.py       # Expiration tests
-│   ├── test_rpush.py           # RPUSH command tests
-│   ├── test_command_handler.py  # Command handler tests
-│   └── test_cache_handler.py    # Cache handler tests
-├── README.md                # Project documentation
-├── requirements.txt         # Project dependencies
-└── venv/                   # Virtual environment (optional)
+│   ├── test_server.py            # Server tests
+│   ├── test_expiration.py        # Expiration tests
+│   ├── test_rpush.py             # RPUSH command tests
+│   ├── test_command_handler.py   # Command handler tests
+│   └── test_cache_handler.py     # Cache handler tests
+├── README.md                     # Project documentation
+├── requirements.txt              # Project dependencies
+└── venv/                         # Virtual environment (optional)
 ```
 
 ## Use Cases
