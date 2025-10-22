@@ -3,47 +3,15 @@ Cache handler module for managing multiple named caches.
 Each cache is a dictionary with its own key-value pairs and expiration settings.
 Supports searching, statistics, persistence, and event hooks.
 """
-import json
 import time
-import os
 import re
-import gzip
 import fnmatch
 import threading
-from enum import Enum
-from typing import Dict, Any, Optional, List, Callable, Iterator, Pattern, Set, Union
-from dataclasses import dataclass
+from typing import Dict, Any, Optional, List, Callable, Iterator, Pattern, Union, Set
 from .expiring_store import ExpiringStore
-
-class CacheEvent(Enum):
-    """Events that can trigger callbacks"""
-    GET = "get"
-    SET = "set"
-    DELETE = "delete"
-    EXPIRE = "expire"
-    CLEAR = "clear"
-    CREATE_CACHE = "create_cache"
-    DELETE_CACHE = "delete_cache"
-
-@dataclass
-class CacheEventContext:
-    """Context information for cache events"""
-    cache_name: str
-    key: Optional[str]
-    value: Any = None
-    old_value: Any = None
-    event_type: CacheEvent = CacheEvent.GET
-    timestamp: float = time.time()
-
-@dataclass
-class CacheStats:
-    """Statistics for a single cache"""
-    hits: int = 0
-    misses: int = 0
-    items: int = 0
-    last_access: float = 0
-    last_write: float = 0
-    created_at: float = time.time()
+from .event_handler import EventHandler, CacheEvent, CacheEventContext
+from .persistence_handler import PersistenceHandler
+from .stats_handler import StatsHandler, CacheStats, StoreStats
 
 class CacheHandler:
     """
@@ -52,13 +20,13 @@ class CacheHandler:
     and managing cache expiration.
     """
     
-    def __init__(self, default_ttl: Optional[float] = None, 
+    def __init__(self, default_ttl: Optional[float] = None,
                  persistence_dir: Optional[str] = None,
-                 auto_persist_interval: float = 300,  # 5 minutes
+                 auto_persist_interval: float = 300,
                  compress_persistence: bool = True):
         """
-        Initialize the cache handler.
-        
+        Initialize a new CacheHandler instance.
+
         Args:
             default_ttl: Default time-to-live for cache entries in seconds
             persistence_dir: Directory to store persistent cache files
@@ -66,15 +34,18 @@ class CacheHandler:
             compress_persistence: Whether to compress persistent files
         """
         self._store = ExpiringStore(default_ttl=default_ttl)
-        self._stats = {}  # Cache name -> CacheStats
-        self._persistence_dir = persistence_dir
-        self._compress_persistence = compress_persistence
         self._lock = threading.RLock()
+        self._event_handler = EventHandler()
+        self._stats_handler = StatsHandler()
+        self._persistence_handler = PersistenceHandler(
+            persistence_dir=persistence_dir,
+            auto_persist_interval=auto_persist_interval,
+            compress_persistence=compress_persistence
+        )
         
-        # Event handlers: (cache_name, event_type) -> set of callbacks
-        self._event_handlers: Dict[tuple[str, CacheEvent], Set[Callable]] = {}
-        # Global handlers: event_type -> set of callbacks
-        self._global_handlers: Dict[CacheEvent, Set[Callable]] = {}
+        # Load any existing persistent caches
+        if persistence_dir:
+            self._load_persistent_caches()
         
         # Set up persistence
         if persistence_dir:
@@ -105,7 +76,7 @@ class CacheHandler:
             if self._store.get(cache_name) is not None:
                 return False
             self._store.set(cache_name, {})
-            self._stats[cache_name] = CacheStats()
+            self._stats_handler.register_cache(cache_name)
             return True
         
     def delete_cache(self, cache_name: str) -> bool:
@@ -144,12 +115,10 @@ class CacheHandler:
             if cache is None:
                 cache = {}
                 self._store.set(cache_name, cache, ttl)
-                self._stats[cache_name] = CacheStats()
+                self._stats_handler.register_cache(cache_name)
             
             cache[key] = value
-            stats = self._stats[cache_name]
-            stats.items = len(cache)
-            stats.last_write = time.time()
+            self._stats_handler.update_cache_items(cache_name, len(cache))
             return True
         
     def get(self, cache_name: str, key: str, default: Any = None) -> Any:
@@ -167,18 +136,14 @@ class CacheHandler:
         with self._lock:
             cache = self._store.get(cache_name)
             if cache is None:
-                if cache_name in self._stats:
-                    self._stats[cache_name].misses += 1
+                self._stats_handler.record_cache_miss(cache_name)
                 return default
                 
-            stats = self._stats[cache_name]
-            stats.last_access = time.time()
-            
             if key in cache:
-                stats.hits += 1
+                self._stats_handler.record_cache_hit(cache_name)
                 return cache[key]
             else:
-                stats.misses += 1
+                self._stats_handler.record_cache_miss(cache_name)
                 return default
         
     def delete(self, cache_name: str, key: str) -> bool:
@@ -198,6 +163,7 @@ class CacheHandler:
         if key not in cache:
             return False
         del cache[key]
+        self._stats_handler.update_cache_items(cache_name, len(cache))
         return True
         
     def list_caches(self) -> list[str]:
@@ -252,16 +218,7 @@ class CacheHandler:
         Thread Safety:
             This method is thread-safe and can be called concurrently.
         """
-        with self._lock:
-            if cache_name:
-                key = (cache_name, event)
-                if key not in self._event_handlers:
-                    self._event_handlers[key] = set()
-                self._event_handlers[key].add(callback)
-            else:
-                if event not in self._global_handlers:
-                    self._global_handlers[event] = set()
-                self._global_handlers[event].add(callback)
+        self._event_handler.on(event, callback, cache_name)
                 
     def off(self, event: CacheEvent, callback: Callable[[CacheEventContext], None],
             cache_name: Optional[str] = None) -> bool:
@@ -292,15 +249,7 @@ class CacheHandler:
         Thread Safety:
             This method is thread-safe and can be called concurrently.
         """
-        with self._lock:
-            try:
-                if cache_name:
-                    self._event_handlers[(cache_name, event)].remove(callback)
-                else:
-                    self._global_handlers[event].remove(callback)
-                return True
-            except KeyError:
-                return False
+        return self._event_handler.off(event, callback, cache_name)
                 
     def _trigger_event(self, event: CacheEvent, context: CacheEventContext) -> None:
         """
@@ -322,23 +271,7 @@ class CacheHandler:
         Thread Safety:
             This method is thread-safe and can be called concurrently.
         """
-        with self._lock:
-            # Call cache-specific handlers
-            if context.cache_name:
-                handlers = self._event_handlers.get((context.cache_name, event), set())
-                for handler in handlers:
-                    try:
-                        handler(context)
-                    except Exception:
-                        pass  # Don't let handler errors propagate
-                        
-            # Call global handlers
-            handlers = self._global_handlers.get(event, set())
-            for handler in handlers:
-                try:
-                    handler(context)
-                except Exception:
-                    pass
+        self._event_handler.trigger_event(event, context)
                     
     def clear_cache(self, cache_name: str) -> bool:
         """
@@ -480,24 +413,25 @@ class CacheHandler:
     
     def get_stats(self, cache_name: str) -> Optional[CacheStats]:
         """Get statistics for a specific cache."""
-        return self._stats.get(cache_name)
+        return self._stats_handler.get_cache_stats(cache_name)
         
     def get_all_stats(self) -> Dict[str, CacheStats]:
         """Get statistics for all caches."""
-        return dict(self._stats)
+        return self._stats_handler.get_all_cache_stats()
         
     def reset_stats(self, cache_name: str) -> bool:
         """Reset statistics for a specific cache."""
-        if cache_name in self._stats:
-            self._stats[cache_name] = CacheStats()
-            return True
-        return False
+        return self._stats_handler.reset_cache_stats(cache_name)
+        
+    def get_store_stats(self) -> 'StoreStats':
+        """Get statistics for the store."""
+        return self._stats_handler.get_store_stats()
         
     # Persistence Methods
     
     def persist(self, cache_name: str) -> bool:
         """
-        Save a cache to disk, optionally compressed.
+        Save a cache to disk.
         
         Args:
             cache_name: Name of the cache to persist
@@ -505,31 +439,12 @@ class CacheHandler:
         Returns:
             bool: True if successful, False otherwise
         """
-        if not self._persistence_dir:
-            return False
-            
         cache = self._store.get(cache_name)
         if cache is None:
             return False
             
-        try:
-            data = json.dumps({
-                'data': cache,
-                'stats': vars(self._stats.get(cache_name, CacheStats()))
-            }).encode('utf-8')
-            
-            if self._compress_persistence:
-                path = os.path.join(self._persistence_dir, f"{cache_name}.json.gz")
-                with gzip.open(path, 'wb') as f:
-                    f.write(data)
-            else:
-                path = os.path.join(self._persistence_dir, f"{cache_name}.json")
-                with open(path, 'wb') as f:
-                    f.write(data)
-                    
-            return True
-        except Exception:
-            return False
+        stats = self._stats.get(cache_name, CacheStats())
+        return self._persistence_handler.persist(cache_name, cache, stats)
             
     def persist_all(self) -> int:
         """
@@ -544,9 +459,14 @@ class CacheHandler:
                 count += 1
         return count
         
-    def load_persistent(self, cache_name: str) -> bool:
+    def _load_persistent_caches(self) -> None:
+        """Load all persistent caches during initialization."""
+        for cache_name in self._persistence_handler.get_cache_files():
+            self._load_cache(cache_name)
+                
+    def _load_cache(self, cache_name: str) -> bool:
         """
-        Load a cache from disk, handling both compressed and uncompressed files.
+        Load a single cache from disk.
         
         Args:
             cache_name: Name of the cache to load
@@ -554,57 +474,25 @@ class CacheHandler:
         Returns:
             bool: True if successful, False otherwise
         """
-        if not self._persistence_dir:
+        result = self._persistence_handler.load_persistent(cache_name)
+        if result is None:
             return False
             
-        # Try compressed file first
-        gz_path = os.path.join(self._persistence_dir, f"{cache_name}.json.gz")
-        json_path = os.path.join(self._persistence_dir, f"{cache_name}.json")
-        
-        try:
-            if os.path.exists(gz_path):
-                with gzip.open(gz_path, 'rb') as f:
-                    data = json.loads(f.read().decode('utf-8'))
-            elif os.path.exists(json_path):
-                with open(json_path, 'rb') as f:
-                    data = json.loads(f.read().decode('utf-8'))
-            else:
-                return False
-                
-            with self._lock:
-                self._store.set(cache_name, data['data'])
-                self._stats[cache_name] = CacheStats(**data['stats'])
-                
-                # Trigger event
-                self._trigger_event(CacheEvent.CREATE_CACHE, CacheEventContext(
-                    cache_name=cache_name,
-                    event_type=CacheEvent.CREATE_CACHE
-                ))
-            return True
-        except Exception:
-            return False
+        cache_data, stats = result
+        with self._lock:
+            self._store.set(cache_name, cache_data)
+            self._stats_handler.register_cache(cache_name)
+            self._stats_handler.import_cache_stats(cache_name, stats)
             
-    def _load_persistent_caches(self) -> None:
-        """Load all persistent caches during initialization."""
-        if not self._persistence_dir:
-            return
-            
-        for filename in os.listdir(self._persistence_dir):
-            if filename.endswith('.json'):
-                cache_name = filename[:-5]  # Remove .json
-                self.load_persistent(cache_name)
-                
-    def _auto_persist_loop(self, interval: float) -> None:
-        """Background thread for automatic persistence."""
-        while not getattr(self, '_stop_persist', threading.Event()).is_set():
-            self.persist_all()
-            time.sleep(interval)
+            # Trigger event
+            self._trigger_event(CacheEvent.CREATE_CACHE, CacheEventContext(
+                cache_name=cache_name,
+                event_type=CacheEvent.CREATE_CACHE
+            ))
+        return True
             
     def stop(self) -> None:
         """Stop background threads and persist caches."""
-        if hasattr(self, '_stop_persist'):
-            self._stop_persist.set()
-            if hasattr(self, '_persist_thread'):
-                self._persist_thread.join()
         self.persist_all()  # Final persistence
+        self._persistence_handler.stop()  # Stop persistence handler
         self._store.stop()  # Stop the expiring store

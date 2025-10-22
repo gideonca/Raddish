@@ -4,9 +4,10 @@ Command handler for the Reddish server.
 This module implements a Redis-like command handler using the command pattern.
 It processes incoming commands and manages interactions with the data store.
 """
-from typing import List, Optional, Any, Callable, Dict
+from typing import List, Optional, Any, Callable, Dict, Tuple
 from .expiring_store import ExpiringStore
 from .validator import validate_command
+from .event_handler import EventHandler
 
 class CommandHandler:
     """
@@ -19,6 +20,7 @@ class CommandHandler:
     Attributes:
         store (ExpiringStore): The backing store for data persistence
         _handlers (Dict): Mapping of commands to their handler methods
+        event_handler (EventHandler): Handler for event-related functionality
     """
 
     def __init__(self, store: ExpiringStore):
@@ -28,6 +30,7 @@ class CommandHandler:
         Args:
             store (ExpiringStore): The data store to use for operations
         """
+        self.event_handler = EventHandler()
         self.store = store
         self._handlers = {
             'PING': self._handle_ping,
@@ -84,12 +87,11 @@ class CommandHandler:
         command = command_parts[0].upper()
         
         if command == 'EXIT':
-            send_response(b'Goodbye!\n')
-            return False
+            return self.event_handler.handle_exit(send_response)
             
         is_valid, error_msg = validate_command(command_parts)
         if not is_valid:
-            send_response(f'ERROR: {error_msg}\n'.encode('utf-8'))
+            self.event_handler.handle_error(error_msg, send_response)
             return True
 
         try:
@@ -98,9 +100,9 @@ class CommandHandler:
                 raise ValueError(f'Unknown command: {command}')
                 
             response = handler(command_parts[1:])
-            send_response(f'{response}\n'.encode('utf-8'))
+            self.event_handler.handle_response(response, send_response)
         except Exception as e:
-            send_response(f'ERROR: {str(e)}\n'.encode('utf-8'))
+            self.event_handler.handle_error(str(e), send_response)
             
         return True
 
