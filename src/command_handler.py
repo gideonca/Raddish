@@ -6,7 +6,7 @@ It processes incoming commands and manages interactions with the data store.
 """
 from typing import List, Optional, Any, Callable, Dict, Tuple
 from .expiring_store import ExpiringStore
-from .validator import validate_command
+from .validation_handler import ValidationHandler
 from .event_handler import EventHandler
 
 class CommandHandler:
@@ -21,6 +21,7 @@ class CommandHandler:
         store (ExpiringStore): The backing store for data persistence
         _handlers (Dict): Mapping of commands to their handler methods
         event_handler (EventHandler): Handler for event-related functionality
+        validation_handler (ValidationHandler): Handler for command validation
     """
 
     def __init__(self, store: ExpiringStore):
@@ -31,6 +32,7 @@ class CommandHandler:
             store (ExpiringStore): The data store to use for operations
         """
         self.event_handler = EventHandler()
+        self.validation_handler = ValidationHandler()
         self.store = store
         self._handlers = {
             'PING': self._handle_ping,
@@ -89,7 +91,7 @@ class CommandHandler:
         if command == 'EXIT':
             return self.event_handler.handle_exit(send_response)
             
-        is_valid, error_msg = validate_command(command_parts)
+        is_valid, error_msg = self.validation_handler.validate_command(command_parts)
         if not is_valid:
             self.event_handler.handle_error(error_msg, send_response)
             return True

@@ -29,6 +29,33 @@ python -m venv venv
 source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
 ```
 
+### Command Validation
+
+Radish includes a robust command validation system that ensures command integrity and provides helpful feedback:
+
+#### Validation Features
+- Argument count validation
+- Type checking for numeric parameters
+- Command usage documentation
+- Extensible command registry
+- Custom command support
+
+#### Adding Custom Commands
+```python
+from src.validation_handler import ValidationHandler
+
+handler = ValidationHandler()
+
+# Register a custom command
+handler.register_command(
+    command='CUSTOM',
+    min_args=2,
+    max_args=3,
+    usage='CUSTOM key [value]',
+    types=[str, str, str]
+)
+```
+
 ### Running
 
 1. Start the server:
@@ -119,7 +146,14 @@ To exit the telnet session:
 
 ### Event System
 
-Radish provides a powerful event system that lets you monitor and react to cache operations. Here's how to use it:
+Radish provides a sophisticated event system for monitoring and reacting to cache operations, with support for both global and cache-specific event handling:
+
+#### Event Architecture
+
+The event system is built on three main components:
+1. **Event Registry** - Manages event subscriptions and dispatching
+2. **Event Context** - Provides comprehensive operation details
+3. **Event Handlers** - User-defined callbacks for specific events
 
 #### Basic Event Handling
 ```python
@@ -136,13 +170,15 @@ cache.on(CacheEvent.SET, on_value_set)
 ```
 
 #### Available Events
-- `CacheEvent.GET` - Triggered when retrieving a value
-- `CacheEvent.SET` - Triggered when setting a value
-- `CacheEvent.DELETE` - Triggered when deleting a key
-- `CacheEvent.EXPIRE` - Triggered when a key expires
-- `CacheEvent.CLEAR` - Triggered when clearing a cache
-- `CacheEvent.CREATE_CACHE` - Triggered when creating a new cache
-- `CacheEvent.DELETE_CACHE` - Triggered when deleting a cache
+- `CacheEvent.GET` - Value retrieval operations
+- `CacheEvent.SET` - Value setting operations
+- `CacheEvent.DELETE` - Key deletion operations
+- `CacheEvent.EXPIRE` - Key expiration events
+- `CacheEvent.CLEAR` - Cache clearing operations
+- `CacheEvent.CREATE_CACHE` - New cache creation
+- `CacheEvent.DELETE_CACHE` - Cache deletion
+- `CacheEvent.LIST_PUSH` - List push operations (LPUSH/RPUSH)
+- `CacheEvent.LIST_POP` - List pop operations (LPOP/RPOP)
 
 #### Event Context
 Each event handler receives a `CacheEventContext` with:
@@ -225,11 +261,42 @@ python3 -m unittest discover tests
 
 ## Implementation Details
 
-- Written in pure Python
-- Uses threading for concurrency
-- Thread-safe operations using locks
-- Automatic background cleanup of expired keys
-- Network protocol similar to Redis
+### Architecture
+
+Radish is built on a robust, modular architecture with clear separation of concerns:
+
+- **Validation Layer** (`validation_handler.py`)
+  - Registry-based command validation
+  - Argument count and type checking
+  - Extensible command specification system
+  - Built-in usage documentation
+
+- **Command Processing** (`command_handler.py`)
+  - Command routing and execution
+  - Error handling and response formatting
+  - Integration with validation and cache systems
+  - Support for custom command registration
+
+- **Cache Management** (`cache_handler.py`)
+  - Event-driven architecture
+  - Thread-safe operations
+  - Comprehensive event system
+  - Support for multiple cache instances
+
+- **Data Store** (`expiring_store.py`)
+  - TTL-based key expiration
+  - Automatic background cleanup
+  - Thread-safe value storage
+  - Support for various data types
+
+### Technical Features
+
+- Written in pure Python with no external dependencies
+- Uses threading for concurrent client handling
+- Thread-safe operations using fine-grained locks
+- Event-driven architecture for extensibility
+- Redis-compatible network protocol
+- Automatic background maintenance tasks
 
 ## Project Structure
 
@@ -237,19 +304,21 @@ python3 -m unittest discover tests
 radish/
 ├── server.py                     # Main server implementation
 ├── src/
-│   ├── validator.py              # Command validation
+│   ├── validation_handler.py     # Command validation and registry
 │   ├── command_handler.py        # Command processing
 │   ├── cache_handler.py          # Cache management and events
 │   └── expiring_store.py         # Key-value store with TTL
 ├── tests/
-│   ├── test_server.py            # Server tests
-│   ├── test_expiration.py        # Expiration tests
-│   ├── test_rpush.py             # RPUSH command tests
-│   ├── test_command_handler.py   # Command handler tests
-│   └── test_cache_handler.py     # Cache handler tests
+│   ├── test_validation_handler.py # Validation system tests
+│   ├── test_command_handler.py    # Command handler tests
+│   ├── test_cache_handler.py      # Cache handler tests
+│   ├── test_enhanced_cache_handler.py  # Extended cache features
+│   ├── test_enhanced_features.py      # Additional functionality
+│   └── test_expiration_manager.py     # TTL and expiration tests
 ├── README.md                     # Project documentation
 ├── requirements.txt              # Project dependencies
-└── venv/                         # Virtual environment (optional)
+├── test_commands.sh             # Test script for common commands
+└── TODO.md                      # Project roadmap and tasks
 ```
 
 ## Use Cases
