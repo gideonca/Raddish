@@ -200,9 +200,9 @@ class CacheHandler:
         Args:
             event: The CacheEvent type to listen for (GET, SET, DELETE, etc.)
             callback: Function to be called when the event occurs. The function
-                     must accept a CacheEventContext parameter.
+                        must accept a CacheEventContext parameter.
             cache_name: Optional name of specific cache to monitor. If None,
-                       the handler will be called for events from all caches.
+                        the handler will be called for events from all caches.
         
         Example:
             # Monitor all SET operations

@@ -98,6 +98,43 @@ OK
 OK
 ```
 
+#### Cache and Store Management
+```
+# Create and manage caches
+> CREATECACHE users
+OK
+> CREATECACHE sessions
+OK
+> LISTCACHES
+Available caches:
+- users (0 items)
+- sessions (0 items)
+
+# Create and manage expiring stores
+> CREATESTORE users temp_tokens 3600  # Create store with 1-hour TTL
+OK
+> CREATESTORE users profiles          # Create store with no TTL
+OK
+> LISTSTORES users
+Stores in cache users:
+- temp_tokens (0 items, 3600 TTL)
+- profiles (0 items, No TTL)
+
+# Store operations use standard commands with cache:store:key format
+> SET users:temp_tokens:123 "session_abc"
+OK
+> SET users:profiles:456 {"name": "John"}
+OK
+> GET users:temp_tokens:123
+session_abc
+
+# Clean up stores and caches
+> DELETESTORE users temp_tokens
+OK
+> DELETECACHE sessions
+OK
+```
+
 #### Working with Lists
 ```
 # Adding elements to a list
@@ -130,15 +167,32 @@ OK
 ```
 
 #### Available Commands
+
+##### Basic Operations
 - `PING` - Test server connection
+- `EXIT` - Close the connection
+- `INSPECT` - Show all key-value pairs
+
+##### Key-Value Operations
 - `SET key value` - Set a key-value pair
 - `GET key` - Get value for a key
 - `DEL key` - Delete a key
 - `EXPIRE key seconds` - Set expiration time for a key
+
+##### List Operations
 - `LPUSH key value` - Push value to the start of a list
 - `RPUSH key value` - Push value to the end of a list
 - `LPOP key` - Remove and return the first element of a list
-- `EXIT` - Close the connection
+
+##### Cache Management
+- `CREATECACHE cache_name` - Create a new cache
+- `DELETECACHE cache_name` - Delete an existing cache
+- `LISTCACHES` - List all available caches
+
+##### Store Management
+- `CREATESTORE cache_name store_name [ttl]` - Create a new expiring store in a cache
+- `DELETESTORE cache_name store_name` - Delete a store from a cache
+- `LISTSTORES cache_name` - List all stores in a cache
 
 To exit the telnet session:
 1. Type `EXIT` command, or

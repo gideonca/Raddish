@@ -44,7 +44,13 @@ class CommandHandler:
             'EXPIRE': self._handle_expire,
             'LPUSH': self._handle_lpush,
             'RPUSH': self._handle_rpush,
-            'INSPECT': self._handle_inspect
+            'INSPECT': self._handle_inspect,
+            'CREATECACHE': self._handle_create_cache,
+            'DELETECACHE': self._handle_delete_cache,
+            'LISTCACHES': self._handle_list_caches,
+            'CREATESTORE': self._handle_create_store,
+            'DELETESTORE': self._handle_delete_store,
+            'LISTSTORES': self._handle_list_stores
         }
 
     def _preprocess_set_command(self, command_parts: List[str]) -> List[str]:
@@ -224,4 +230,127 @@ class CommandHandler:
             v = self.store.get(k)
             result.append(f'{k}: {v}')
         result.append('END')
+        return '\n'.join(result)
+
+    def _handle_create_cache(self, args: List[str]) -> str:
+        """
+        Handle CREATECACHE command.
+        
+        Args:
+            args: [cache_name] name of the cache to create
+            
+        Returns:
+            str: 'OK' if cache was created, error message if it already exists
+        """
+        cache_name = args[0]
+        if self.store.create_cache(cache_name):
+            return 'OK'
+        return f'Cache {cache_name} already exists'
+
+    def _handle_delete_cache(self, args: List[str]) -> str:
+        """
+        Handle DELETECACHE command.
+        
+        Args:
+            args: [cache_name] name of the cache to delete
+            
+        Returns:
+            str: 'OK' if cache was deleted, error message if it didn't exist
+        """
+        cache_name = args[0]
+        if self.store.delete_cache(cache_name):
+            return 'OK'
+        return f'Cache {cache_name} does not exist'
+
+    def _handle_list_caches(self, args: List[str]) -> str:
+        """
+        Handle LISTCACHES command.
+        
+        Returns:
+            str: Formatted string listing all cache names
+        """
+        caches = self.store.list_caches()
+        if not caches:
+            return 'No caches exist'
+        result = ['Available caches:']
+        for cache in caches:
+            size = self.store.get_cache_size(cache)
+            result.append(f'- {cache} ({size} items)')
+        return '\n'.join(result)
+
+    def _handle_create_store(self, args: List[str]) -> str:
+        """
+        Handle CREATESTORE command.
+        
+        Args:
+            args: [cache_name, store_name, ttl?] where ttl is optional in seconds
+            
+        Returns:
+            str: 'OK' if store was created, error message otherwise
+        """
+        cache_name, store_name = args[0], args[1]
+        ttl = float(args[2]) if len(args) > 2 else None
+        
+        try:
+            store = ExpiringStore(default_ttl=ttl)
+            if self.store.set(cache_name, {store_name: store}):
+                return 'OK'
+            return f'Failed to create store {store_name} in cache {cache_name}'
+        except Exception as e:
+            return f'Error creating store: {str(e)}'
+
+    def _handle_delete_store(self, args: List[str]) -> str:
+        """
+        Handle DELETESTORE command.
+        
+        Args:
+            args: [cache_name, store_name]
+            
+        Returns:
+            str: 'OK' if store was deleted, error message if it didn't exist
+        """
+        cache_name, store_name = args[0], args[1]
+        cache = self.store.get(cache_name)
+        
+        if not cache:
+            return f'Cache {cache_name} does not exist'
+            
+        if store_name not in cache:
+            return f'Store {store_name} does not exist in cache {cache_name}'
+            
+        store = cache[store_name]
+        if isinstance(store, ExpiringStore):
+            store.stop()  # Stop the cleanup thread
+            
+        del cache[store_name]
+        return 'OK'
+
+    def _handle_list_stores(self, args: List[str]) -> str:
+        """
+        Handle LISTSTORES command.
+        
+        Args:
+            args: [cache_name]
+            
+        Returns:
+            str: Formatted string listing all stores in the cache
+        """
+        cache_name = args[0]
+        cache = self.store.get(cache_name)
+        
+        if not cache:
+            return f'Cache {cache_name} does not exist'
+            
+        stores = [name for name, value in cache.items() 
+                 if isinstance(value, ExpiringStore)]
+        
+        if not stores:
+            return f'No stores in cache {cache_name}'
+            
+        result = [f'Stores in cache {cache_name}:']
+        for store_name in stores:
+            store = cache[store_name]
+            num_items = len(store.keys())
+            ttl = store.default_ttl or 'No'
+            result.append(f'- {store_name} ({num_items} items, {ttl} TTL)')
         return '\n'.join(result)
