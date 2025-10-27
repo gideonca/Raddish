@@ -1,7 +1,7 @@
 ## Current Features and Roadmap
 
 # TODO List
-# Introduction
+# Basic
   - [x] Bind to a port
   - [x] Respond to PING (PING)
   - [x] Respond to multiple PINGs 
@@ -9,6 +9,7 @@
   - [x] Implement the ECHO command (ECHO)
   - [x] Implement the SET & GET commands (SET & GET)
   - [x] Expiry (Add PX argument to SET command)
+  - [ ] Replication of cache
 
 # Lists
   - [x] Create a list (RPUSH -> Return num elements as RESP int)
