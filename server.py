@@ -12,6 +12,7 @@ import socket
 import threading
 from src.expiring_store import ExpiringStore
 from src.command_handler import CommandHandler
+# import colorama
 
 # Initialize store and command handler
 store = ExpiringStore()
@@ -76,9 +77,48 @@ def start_server(host='127.0.0.1', port=6379):
         The server runs indefinitely until interrupted. Each client connection
         is handled in a separate thread.
     """
+    RESET = "\033[0m"
+    GREEN = "\033[32m"
+    LIME = "\033[92m"
+    PURPLE = "\033[95m"
+    RED = "\033[91m"
+    WHITE = "\033[97m"
+    BROWN = "\033[33m"
+    GRAY = "\033[90m"
+    MAGENTA = "\033[95m"
+    
+    radish = [
+        f"        {LIME}__  __{RESET}",
+        f"       {LIME}/  \\/  \\{RESET}",
+        f"      {LIME}/        \\{RESET}",
+        f"     {LIME}|   {GREEN}/\\   |{RESET}",
+        f"      {LIME}\\        /{RESET}",
+        f"       {LIME}'-.____.-'{RESET}",
+        f"           {RED}.-''''-.{RESET}",
+        f"         {RED}.-'        '-.{RESET}",
+        f"        {PURPLE}/    {GRAY} ..   {PURPLE}\\{RESET}",
+        f"        {PURPLE}|    {GRAY}(__){PURPLE}   |{RESET}",
+        f"         {PURPLE}\\          /{RESET}",
+        f"          {PURPLE}'-.____.-'{RESET}",
+        f"              {BROWN}||{RESET}",
+        f"              {BROWN}||{RESET}",
+    ]
+    
+    radish_colorized = f"""
+    {RED}RRRR{RESET}   {GREEN}AAA{RESET}   {MAGENTA}DDDD{RESET}   {WHITE}III{RESET}  {RED}SSSS{RESET}  {GREEN}H   H{RESET}
+    {RED}R   R{RESET} {GREEN}A   A{RESET}  {MAGENTA}D   D{RESET}   {WHITE}I{RESET}  {RED}S    {RESET}  {GREEN}H   H{RESET}
+    {RED}RRRR{RESET}  {GREEN}AAAAA{RESET}  {MAGENTA}D   D{RESET}   {WHITE}I{RESET}   {RED}SSS {RESET}  {GREEN}HHHHH{RESET}
+    {RED}R R{RESET}   {GREEN}A   A{RESET}  {MAGENTA}D   D{RESET}   {WHITE}I{RESET}      {RED}S{RESET}  {GREEN}H   H{RESET}
+    {RED}R  RR{RESET} {GREEN}A   A{RESET}  {MAGENTA}DDDD{RESET}   {WHITE}III{RESET}  {RED}SSSS{RESET}  {GREEN}H   H{RESET}
+    """
+    
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind((host, port))
     server.listen(5)
+    
+    print("\n" + radish_colorized + "\n")
+    print("\n" + "\n".join(radish) + "\n")
+    
     print(f'Server listening on {host}:{port}')
     
     try:
