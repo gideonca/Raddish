@@ -6,6 +6,7 @@ It processes incoming commands and manages interactions with the data store.
 """
 from typing import List, Optional, Any, Callable, Dict, Tuple
 from .expiring_store import ExpiringStore
+from .expiring_cache import ExpiringCache
 from .validation_handler import ValidationHandler
 from .event_handler import EventHandler
 
@@ -24,7 +25,7 @@ class CommandHandler:
         validation_handler (ValidationHandler): Handler for command validation
     """
 
-    def __init__(self, store: ExpiringStore):
+    def __init__(self, store: Optional[ExpiringStore] = None, cache: Optional[ExpiringStore] = None):
         """
         Initialize a new CommandHandler instance.
 
@@ -33,7 +34,8 @@ class CommandHandler:
         """
         self.event_handler = EventHandler()
         self.validation_handler = ValidationHandler()
-        self.store = store
+        self.store = store if store is not None else ExpiringStore()
+        self.cache = cache if cache is not None else ExpiringCache()
         self._handlers = {
             'PING': self._handle_ping,
             'ECHO': self._handle_echo,
@@ -241,12 +243,9 @@ class CommandHandler:
             
         Returns:
             str: 'OK' if cache was created, error message if it already exists
-        """
-        cache_name = args[0]
-        if self.store.create_cache(cache_name):
-            return 'OK'
-        return f'Cache {cache_name} already exists'
-
+        """    
+        pass
+    
     def _handle_delete_cache(self, args: List[str]) -> str:
         """
         Handle DELETECACHE command.
@@ -257,11 +256,8 @@ class CommandHandler:
         Returns:
             str: 'OK' if cache was deleted, error message if it didn't exist
         """
-        cache_name = args[0]
-        if self.store.delete_cache(cache_name):
-            return 'OK'
-        return f'Cache {cache_name} does not exist'
-
+        pass
+    
     def _handle_list_caches(self, args: List[str]) -> str:
         """
         Handle LISTCACHES command.
@@ -269,14 +265,7 @@ class CommandHandler:
         Returns:
             str: Formatted string listing all cache names
         """
-        caches = self.store.list_caches()
-        if not caches:
-            return 'No caches exist'
-        result = ['Available caches:']
-        for cache in caches:
-            size = self.store.get_cache_size(cache)
-            result.append(f'- {cache} ({size} items)')
-        return '\n'.join(result)
+        pass
 
     def _handle_create_store(self, args: List[str]) -> str:
         """
