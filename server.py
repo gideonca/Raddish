@@ -12,7 +12,6 @@ import socket
 import threading
 from src.expiring_store import ExpiringStore
 from src.command_handler import CommandHandler
-# import colorama
 
 # Initialize store and command handler
 store = ExpiringStore()
