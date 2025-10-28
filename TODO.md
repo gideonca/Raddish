@@ -11,8 +11,6 @@
   - [x] Expiry (Add PX argument to SET command)
   - [ ] Replication of cache
   - [ ] Implementation of LRU
-  - [ ] Logging of transaction history
-  - [ ] Continual persistence to avoid crashes and restore state
 
 # Lists
   - [x] Create a list (RPUSH -> Return num elements as RESP int)
@@ -92,7 +90,6 @@
   - [ ] Publish a message
   - [ ] Deliver messages
   - [ ] Unsubscribe
-  - [ ] Implementation of Dead letter Queue
 
 # Sorted Sets
   - [ ] Create a sorted set
