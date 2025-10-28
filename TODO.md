@@ -10,10 +10,12 @@
   - [x] Implement the SET & GET commands (SET & GET)
   - [x] Expiry (Add PX argument to SET command)
   - [ ] Replication of cache
+  - [ ] Implementation of LRU
 
 # Lists
   - [x] Create a list (RPUSH -> Return num elements as RESP int)
   - [x] Append an element (existing list support for RPUSH)
+  - [X] Prepend element to list (LPUSH)
   - [ ] Append multiple elements 
   - [ ] List elements (positive indexes) (LRANGE w/ start and end index)
   - [ ] List elements (negative indexes) (See above, get abs val)

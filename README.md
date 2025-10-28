@@ -361,8 +361,6 @@ radish/
 │   ├── validation_handler.py     # Command validation and registry
 │   ├── command_handler.py        # Command processing
 │   ├── cache_handler.py          # Cache management and events
-│   ├── event_handler.py          # Event management
-│   ├── stats_handler.py          # Statistics on various memory stores
 │   └── expiring_store.py         # Key-value store with TTL
 ├── tests/
 │   ├── test_validation_handler.py # Validation system tests
@@ -380,9 +378,9 @@ radish/
 ## Use Cases
 
 1. **Development and Testing**
-   - Local Memory store replacement for development
-   - Testing Memory Store dependent applications
-   - Learning Memory store behavior and structure
+   - Local Redis replacement for development
+   - Testing Redis-dependent applications
+   - Learning Redis commands and behavior
 
 2. **Educational**
    - Understanding key-value stores
