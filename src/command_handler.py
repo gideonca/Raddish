@@ -116,7 +116,21 @@ class CommandHandler:
 
     def _handle_ping(self, args: List[str]) -> str:
         """Handle PING command."""
-        return 'PONG'
+        return r"""
+                     .-.
+                    (o o)  
+                    | O \
+                    \   \
+                    `~~~'
+                    /     \
+                   /       \
+                  /         \
+                 /           \
+                /             \
+               /               \
+               -----------------
+                    I LIVE
+                """
 
     def _handle_echo(self, args: List[str]) -> str:
         """
