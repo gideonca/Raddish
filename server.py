@@ -112,6 +112,8 @@ def start_server(host='127.0.0.1', port=6379):
     """
     
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # Allow reuse of the address
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server.bind((host, port))
     server.listen(5)
     
@@ -130,9 +132,14 @@ def start_server(host='127.0.0.1', port=6379):
             )
             client_handler.start()
     except KeyboardInterrupt:
-        print('Shutting down server.')
+        print('\nShutting down server...')
     finally:
+        print('Cleaning up resources...')
+        # Stop the expiring store's cleanup thread
+        store.stop()
+        # Close the server socket
         server.close()
+        print('Server shutdown complete.')
         
 if __name__ == '__main__':
     start_server()

@@ -216,6 +216,7 @@ class CommandHandler:
         """
         key, value = args[0], args[1]
         current = self.store.get(key, [])
+        print(current)
         if not isinstance(current, list):
             current = [current] if current != 'NULL' else []
         current.insert(0, value)  # Insert at the beginning of the list
