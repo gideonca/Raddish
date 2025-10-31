@@ -29,7 +29,7 @@ class ValidationHandler:
             'ECHO':    {'min_args': 2, 'max_args': None, 'usage': 'ECHO message ...'},
             'LPUSH':   {'min_args': 3, 'max_args': 3, 'usage': 'LPUSH key value'},
             'RPUSH':   {'min_args': 3, 'max_args': 3, 'usage': 'RPUSH key value'},
-            'INSPECT': {'min_args': 1, 'max_args': 1, 'usage': 'INSPECT'},
+            'INSPECT': {'min_args': 1, 'max_args': 2, 'usage': 'INSPECT'},
             'CREATECACHE': {'min_args': 2, 'max_args': 2, 'usage': 'CREATECACHE cache_name'},
             'DELETECACHE': {'min_args': 2, 'max_args': 2, 'usage': 'DELETECACHE cache_name'},
             'LISTCACHES':  {'min_args': 1, 'max_args': 1, 'usage': 'LISTCACHES'},

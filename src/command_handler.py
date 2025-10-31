@@ -215,7 +215,11 @@ class CommandHandler:
             str: 'OK' on success
         """
         key, value = args[0], args[1]
-        self.store.prepend(key, value)
+        current = self.store.get(key, [])
+        if not isinstance(current, list):
+            current = [current] if current != 'NULL' else []
+        current.insert(0, value)  # Insert at the beginning of the list
+        self.store.set(key, current)
         return 'OK'
 
     def _handle_rpush(self, args: List[str]) -> str:
@@ -229,7 +233,11 @@ class CommandHandler:
             str: 'OK' on success
         """
         key, value = args[0], args[1]
-        self.store.set(key, value)
+        current = self.store.get(key, [])
+        if not isinstance(current, list):
+            current = [current] if current != 'NULL' else []
+        current.append(value)
+        self.store.set(key, current)
         return 'OK'
 
     def _handle_inspect(self, args: List[str]) -> str:
