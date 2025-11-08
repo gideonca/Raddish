@@ -99,17 +99,103 @@ OK
 ```
 
 #### Cache and Store Management
+
+##### Named Caches
+
+Radish supports named caches for organizing data into isolated namespaces. Each cache is independent and can store its own set of key-value pairs.
+
+**Benefits:**
+- **Isolation**: Keep different types of data separate
+- **Organization**: Group related data together
+- **Bulk Operations**: Delete all data in a cache at once
+- **No Key Conflicts**: Same key name can exist in different caches
+
+**Creating and Managing Caches:**
 ```
-# Create and manage caches
+# Create named caches
 > CREATECACHE users
+OK
+> CREATECACHE products
 OK
 > CREATECACHE sessions
 OK
+
+# List all caches with their sizes
 > LISTCACHES
 Available caches:
 - users (0 items)
+- products (0 items)
 - sessions (0 items)
+```
 
+**Working with Cache Data:**
+```
+# Store key-value pairs in specific caches
+> CACHESET users user:1 john@example.com
+OK
+> CACHESET users user:2 jane@example.com
+OK
+> CACHESET products item:100 Laptop
+OK
+> CACHESET products item:101 Mouse
+OK
+
+# Retrieve values from specific caches
+> CACHEGET users user:1
+john@example.com
+> CACHEGET products item:100
+Laptop
+
+# List all keys in a cache
+> CACHEKEYS users
+user:1
+user:2
+
+# Delete a key from a cache
+> CACHEDEL users user:2
+OK
+
+# Delete an entire cache
+> DELETECACHE sessions
+OK
+```
+
+**Example Workflow:**
+```
+# Organize user sessions and product data separately
+> CREATECACHE user_sessions
+OK
+> CREATECACHE product_catalog
+OK
+
+# Store session data
+> CACHESET user_sessions sess:abc123 user:1
+OK
+> CACHESET user_sessions sess:def456 user:2
+OK
+
+# Store product data
+> CACHESET product_catalog laptop {"name": "Dell XPS", "price": 1200}
+OK
+> CACHESET product_catalog mouse {"name": "Logitech MX", "price": 80}
+OK
+
+# Retrieve and manage data
+> CACHEGET user_sessions sess:abc123
+user:1
+> CACHEKEYS product_catalog
+laptop
+mouse
+
+# Check cache sizes
+> LISTCACHES
+Available caches:
+- user_sessions (2 items)
+- product_catalog (2 items)
+```
+
+##### Expiring Stores (Advanced)
+```
 # Create and manage expiring stores
 > CREATESTORE users temp_tokens 3600  # Create store with 1-hour TTL
 OK
@@ -187,9 +273,16 @@ OK
 ##### Cache Management
 - `CREATECACHE cache_name` - Create a new cache
 - `DELETECACHE cache_name` - Delete an existing cache
-- `LISTCACHES` - List all available caches
+- `LISTCACHES` - List all available caches with sizes
 
-##### Store Management
+##### Cache Operations
+- `CACHESET cache_name key value` - Set a key-value pair in a named cache
+- `CACHEGET cache_name key` - Get a value from a named cache
+- `CACHEDEL cache_name key` - Delete a key from a named cache
+- `CACHEKEYS cache_name` - List all keys in a named cache
+- `CACHEGETALL cache_name` - Get all key-value pairs from a cache as JSON
+
+##### Store Management (Advanced)
 - `CREATESTORE cache_name store_name [ttl]` - Create a new expiring store in a cache
 - `DELETESTORE cache_name store_name` - Delete a store from a cache
 - `LISTSTORES cache_name` - List all stores in a cache
@@ -197,6 +290,27 @@ OK
 To exit the telnet session:
 1. Type `EXIT` command, or
 2. Press `Ctrl+]` and then type `quit`
+
+### Named Cache Examples
+
+See the complete guide and examples:
+- **Quick Guide**: `NAMED_CACHE_GUIDE.md` - Comprehensive documentation
+- **Python Example**: `example_named_cache.py` - Full demonstration
+- **Test Script**: `test_named_cache.sh` - Automated testing
+
+Run the Python example:
+```bash
+# Start the server first
+python server.py
+
+# In another terminal, run the example
+python example_named_cache.py
+```
+
+Run the test script:
+```bash
+./test_named_cache.sh
+```
 
 ### Event System
 
@@ -356,23 +470,29 @@ Radish is built on a robust, modular architecture with clear separation of conce
 
 ```
 radish/
-├── server.py                     # Main server implementation
+├── server.py                          # Main server implementation
 ├── src/
-│   ├── validation_handler.py     # Command validation and registry
-│   ├── command_handler.py        # Command processing
-│   ├── cache_handler.py          # Cache management and events
-│   └── expiring_store.py         # Key-value store with TTL
+│   ├── validation_handler.py          # Command validation and registry
+│   ├── command_handler.py             # Command processing
+│   ├── cache_handler.py               # Cache management and events
+│   ├── expiring_store.py              # Key-value store with TTL and named caches
+│   ├── event_handler.py               # Event system
+│   ├── persistence_handler.py         # Data persistence
+│   └── stats_handler.py               # Statistics tracking
 ├── tests/
-│   ├── test_validation_handler.py # Validation system tests
-│   ├── test_command_handler.py    # Command handler tests
-│   ├── test_cache_handler.py      # Cache handler tests
-│   ├── test_enhanced_cache_handler.py  # Extended cache features
+│   ├── test_validation_handler.py     # Validation system tests
+│   ├── test_command_handler.py        # Command handler tests
+│   ├── test_cache_handler.py          # Cache handler tests
+│   ├── test_enhanced_cache_handler.py # Extended cache features
 │   ├── test_enhanced_features.py      # Additional functionality
 │   └── test_expiration_manager.py     # TTL and expiration tests
-├── README.md                     # Project documentation
-├── requirements.txt              # Project dependencies
-├── test_commands.sh             # Test script for common commands
-└── TODO.md                      # Project roadmap and tasks
+├── README.md                          # Project documentation
+├── NAMED_CACHE_GUIDE.md               # Named cache system guide
+├── requirements.txt                   # Project dependencies
+├── test_commands.sh                   # Test script for common commands
+├── test_named_cache.sh                # Test script for named caches
+├── example_named_cache.py             # Python example for named caches
+└── TODO.md                            # Project roadmap and tasks
 ```
 
 ## Use Cases

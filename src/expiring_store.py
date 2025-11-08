@@ -214,3 +214,177 @@ class ExpiringStore:
         """
         with self._lock:
             self._store.clear()
+    
+    def create_cache(self, cache_name: str) -> bool:
+        """
+        Create a new named cache (a dictionary to hold key-value pairs).
+        
+        Args:
+            cache_name: Name of the cache to create
+            
+        Returns:
+            bool: True if cache was created, False if it already exists
+            
+        Thread Safety:
+            This method is thread-safe and can be called concurrently.
+        """
+        with self._lock:
+            if cache_name in self._store and self._store[cache_name][0] is not None:
+                return False
+            self._store[cache_name] = ({}, None)
+            return True
+    
+    def delete_cache(self, cache_name: str) -> bool:
+        """
+        Delete a named cache and all its contents.
+        
+        Args:
+            cache_name: Name of the cache to delete
+            
+        Returns:
+            bool: True if cache was deleted, False if it didn't exist
+            
+        Thread Safety:
+            This method is thread-safe and can be called concurrently.
+        """
+        with self._lock:
+            if cache_name not in self._store:
+                return False
+            del self._store[cache_name]
+            return True
+    
+    def list_caches(self) -> List[str]:
+        """
+        List all named caches.
+        
+        Returns:
+            List[str]: List of cache names
+            
+        Thread Safety:
+            This method is thread-safe and can be called concurrently.
+        """
+        with self._lock:
+            return [k for k, (v, _) in self._store.items() if isinstance(v, dict)]
+    
+    def get_cache_size(self, cache_name: str) -> int:
+        """
+        Get the number of items in a named cache.
+        
+        Args:
+            cache_name: Name of the cache
+            
+        Returns:
+            int: Number of items in the cache, or 0 if cache doesn't exist
+            
+        Thread Safety:
+            This method is thread-safe and can be called concurrently.
+        """
+        cache = self.get(cache_name)
+        if cache and isinstance(cache, dict):
+            return len(cache)
+        return 0
+    
+    def cache_set(self, cache_name: str, key: str, value: Any) -> bool:
+        """
+        Set a key-value pair within a named cache.
+        
+        Args:
+            cache_name: Name of the cache
+            key: The key to set
+            value: The value to store
+            
+        Returns:
+            bool: True if successful, False if cache doesn't exist
+            
+        Thread Safety:
+            This method is thread-safe and can be called concurrently.
+        """
+        with self._lock:
+            if cache_name not in self._store:
+                return False
+            cache, expiry = self._store[cache_name]
+            if not isinstance(cache, dict):
+                return False
+            cache[key] = value
+            self._store[cache_name] = (cache, expiry)
+            return True
+    
+    def cache_get(self, cache_name: str, key: str, default: Any = None) -> Any:
+        """
+        Get a value from a named cache.
+        
+        Args:
+            cache_name: Name of the cache
+            key: The key to retrieve
+            default: Value to return if key or cache doesn't exist
+            
+        Returns:
+            The value if found, otherwise the default value
+            
+        Thread Safety:
+            This method is thread-safe and can be called concurrently.
+        """
+        cache = self.get(cache_name)
+        if cache and isinstance(cache, dict):
+            return cache.get(key, default)
+        return default
+    
+    def cache_delete(self, cache_name: str, key: str) -> bool:
+        """
+        Delete a key from a named cache.
+        
+        Args:
+            cache_name: Name of the cache
+            key: The key to delete
+            
+        Returns:
+            bool: True if key was deleted, False if key or cache doesn't exist
+            
+        Thread Safety:
+            This method is thread-safe and can be called concurrently.
+        """
+        with self._lock:
+            if cache_name not in self._store:
+                return False
+            cache, expiry = self._store[cache_name]
+            if not isinstance(cache, dict) or key not in cache:
+                return False
+            del cache[key]
+            self._store[cache_name] = (cache, expiry)
+            return True
+    
+    def cache_keys(self, cache_name: str) -> List[str]:
+        """
+        Get all keys in a named cache.
+        
+        Args:
+            cache_name: Name of the cache
+            
+        Returns:
+            List[str]: List of keys in the cache, or empty list if cache doesn't exist
+            
+        Thread Safety:
+            This method is thread-safe and can be called concurrently.
+        """
+        cache = self.get(cache_name)
+        if cache and isinstance(cache, dict):
+            return list(cache.keys())
+        return []
+    
+    def cache_get_all(self, cache_name: str) -> Optional[Dict[str, Any]]:
+        """
+        Get all key-value pairs from a named cache.
+        
+        Args:
+            cache_name: Name of the cache
+            
+        Returns:
+            Dict[str, Any]: Dictionary of all key-value pairs, or None if cache doesn't exist
+            
+        Thread Safety:
+            This method is thread-safe and can be called concurrently.
+        """
+        cache = self.get(cache_name)
+        if cache and isinstance(cache, dict):
+            return cache.copy()  # Return a copy to prevent external modifications
+        return None
