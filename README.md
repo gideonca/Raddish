@@ -294,9 +294,9 @@ To exit the telnet session:
 ### Named Cache Examples
 
 See the complete guide and examples:
-- **Quick Guide**: `NAMED_CACHE_GUIDE.md` - Comprehensive documentation
-- **Python Example**: `example_named_cache.py` - Full demonstration
-- **Test Script**: `test_named_cache.sh` - Automated testing
+- **Quick Guide**: [`docs/NAMED_CACHE_GUIDE.md`](docs/NAMED_CACHE_GUIDE.md) - Comprehensive documentation
+- **Python Example**: `scripts/example_named_cache.py` - Full demonstration
+- **Test Script**: `scripts/test_named_cache.sh` - Automated testing
 
 Run the Python example:
 ```bash
@@ -304,12 +304,12 @@ Run the Python example:
 python server.py
 
 # In another terminal, run the example
-python example_named_cache.py
+python scripts/example_named_cache.py
 ```
 
 Run the test script:
 ```bash
-./test_named_cache.sh
+./scripts/test_named_cache.sh
 ```
 
 ### Event System
@@ -486,13 +486,21 @@ radish/
 │   ├── test_enhanced_cache_handler.py # Extended cache features
 │   ├── test_enhanced_features.py      # Additional functionality
 │   └── test_expiration_manager.py     # TTL and expiration tests
+├── docs/
+│   ├── NAMED_CACHE_GUIDE.md           # Named cache system guide
+│   ├── HTTP_SERVER_GUIDE.md           # HTTP API documentation
+│   └── TODO.md                        # Project roadmap and tasks
+├── scripts/
+│   ├── test_commands.sh               # Test script for common commands
+│   ├── test_named_cache.sh            # Test script for named caches
+│   ├── test_http.sh                   # Test script for HTTP API
+│   ├── test_cachegetall.py            # Test script for CACHEGETALL
+│   ├── example_named_cache.py         # Python example for named caches
+│   └── example_http_client.py         # Python HTTP client example
 ├── README.md                          # Project documentation
-├── NAMED_CACHE_GUIDE.md               # Named cache system guide
 ├── requirements.txt                   # Project dependencies
-├── test_commands.sh                   # Test script for common commands
-├── test_named_cache.sh                # Test script for named caches
-├── example_named_cache.py             # Python example for named caches
-└── TODO.md                            # Project roadmap and tasks
+├── server.py                          # Main TCP server (port 6379)
+└── http_server.py                     # HTTP API server (port 8000)
 ```
 
 ## Use Cases
