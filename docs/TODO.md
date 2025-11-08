@@ -14,6 +14,8 @@
   - [ ] Logging of transaction history
   - [ ] Continual persistence to avoid crashes and restore state
   - [ ] Key up and down rotates through command history so you an replay commands
+  - [ ] Setup endpoint to stream logs from server via the http server
+  - [x] Setup named cache system
 
 # Lists
   - [x] Create a list (RPUSH -> Return num elements as RESP int)
