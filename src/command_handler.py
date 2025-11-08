@@ -90,6 +90,8 @@ class CommandHandler:
         if not command_parts:
             return True
 
+        # TODO: Need to implement command logging here
+
         # Preprocess command parts to handle JSON values with spaces
         command_parts = self._preprocess_set_command(command_parts)
         command = command_parts[0].upper()

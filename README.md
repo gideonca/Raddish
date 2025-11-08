@@ -19,7 +19,7 @@ A lightweight Redis-like in-memory data store implementation in Python. Radish p
 1. Clone the repository:
 ```bash
 git clone https://github.com/gideonca/radish.git
-cd Radish
+cd radish
 ```
 
 2. (Optional) Create and activate a virtual environment:
