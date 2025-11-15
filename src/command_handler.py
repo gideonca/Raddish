@@ -8,6 +8,7 @@ from typing import List, Optional, Any, Callable, Dict, Tuple
 from .expiring_store import ExpiringStore
 from .validation_handler import ValidationHandler
 from .event_handler import EventHandler
+from .logging_handler import LoggingHandler
 
 class CommandHandler:
     """
@@ -24,15 +25,17 @@ class CommandHandler:
         validation_handler (ValidationHandler): Handler for command validation
     """
 
-    def __init__(self, store: ExpiringStore):
+    def __init__(self, store: ExpiringStore, logging_handler: LoggingHandler = None):
         """
         Initialize a new CommandHandler instance.
 
         Args:
             store (ExpiringStore): The data store to use for operations
+            logging_handler (LoggingHandler): Optional logging handler for command logging
         """
         self.event_handler = EventHandler()
         self.validation_handler = ValidationHandler()
+        self.logging_handler = logging_handler or LoggingHandler()
         self.store = store
         self._handlers = {
             'PING': self._handle_ping,
@@ -81,13 +84,14 @@ class CommandHandler:
             ]
         return command_parts
 
-    def handle_command(self, command_parts: List[str], send_response: Callable) -> bool:
+    def handle_command(self, command_parts: List[str], send_response: Callable, client_addr: tuple = None) -> bool:
         """
         Handle a command and send response through the callback.
         
         Args:
             command_parts: List of command parts (command and arguments)
             send_response: Callback function to send response to client
+            client_addr: Optional tuple of (host, port) for the client
             
         Returns:
             bool: True if connection should stay open, False to close
@@ -95,29 +99,48 @@ class CommandHandler:
         if not command_parts:
             return True
 
-        # TODO: Need to implement command logging here
+        # Log the incoming command
+        if client_addr and self.logging_handler:
+            command_str = ' '.join(command_parts)
+            self.logging_handler.log_command(client_addr, command_str)
 
         # Preprocess command parts to handle JSON values with spaces
         command_parts = self._preprocess_set_command(command_parts)
         command = command_parts[0].upper()
         
         if command == 'EXIT':
+            response = "Goodbye!"
+            if client_addr and self.logging_handler:
+                self.logging_handler.log_response(client_addr, response, command)
             return self.event_handler.handle_exit(send_response)
             
         is_valid, error_msg = self.validation_handler.validate_command(command_parts)
         if not is_valid:
+            if client_addr and self.logging_handler:
+                self.logging_handler.log_error(client_addr, error_msg, command)
             self.event_handler.handle_error(error_msg, send_response)
             return True
 
         try:
             handler = self._handlers.get(command)
             if not handler:
-                raise ValueError(f'Unknown command: {command}')
+                error_msg = f'Unknown command: {command}'
+                if client_addr and self.logging_handler:
+                    self.logging_handler.log_error(client_addr, error_msg, command)
+                raise ValueError(error_msg)
                 
             response = handler(command_parts[1:])
+            
+            # Log the response
+            if client_addr and self.logging_handler:
+                self.logging_handler.log_response(client_addr, response, command)
+                
             self.event_handler.handle_response(response, send_response)
         except Exception as e:
-            self.event_handler.handle_error(str(e), send_response)
+            error_msg = str(e)
+            if client_addr and self.logging_handler:
+                self.logging_handler.log_error(client_addr, error_msg, command)
+            self.event_handler.handle_error(error_msg, send_response)
             
         return True
 

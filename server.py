@@ -12,12 +12,14 @@ import socket
 import threading
 from src.expiring_store import ExpiringStore
 from src.command_handler import CommandHandler
+from src.logging_handler import LoggingHandler
 
-# Initialize store and command handler
+# Initialize store, logging, and command handler
 store = ExpiringStore()
-command_handler = CommandHandler(store)
+logging_handler = LoggingHandler()
+command_handler = CommandHandler(store, logging_handler)
 
-def handle_client_connection(client_socket):
+def handle_client_connection(client_socket, client_addr):
     """
     Handle individual client connections and process their commands.
     
@@ -27,11 +29,15 @@ def handle_client_connection(client_socket):
     
     Args:
         client_socket (socket.socket): The connected client socket to handle
+        client_addr (tuple): Tuple of (host, port) for the client
         
     Note:
         The connection is automatically closed when the client disconnects or
         sends an EXIT command.
     """
+    # Log the connection
+    logging_handler.log_connection(client_addr, "CONNECTED")
+    
     def send_response(response: bytes):
         """
         Send a response back to the client.
@@ -52,10 +58,13 @@ def handle_client_connection(client_socket):
                 continue
                 
             # Process command and check if we should continue
-            if not command_handler.handle_command(command_parts, send_response):
+            if not command_handler.handle_command(command_parts, send_response, client_addr):
                 break
                 
         client_socket.close()
+    
+    # Log the disconnection
+    logging_handler.log_connection(client_addr, "DISCONNECTED")
 
 def start_server(host='127.0.0.1', port=6379):
     """
@@ -121,6 +130,10 @@ def start_server(host='127.0.0.1', port=6379):
     print("\n" + "\n".join(radish) + "\n")
     
     print(f'Server listening on {host}:{port}')
+    print(f'Logs are being written to: {logging_handler.get_log_file_path()}')
+    
+    # Log server start
+    logging_handler.log_server_event(f"Server started on {host}:{port}")
     
     try:
         while True:
@@ -128,17 +141,19 @@ def start_server(host='127.0.0.1', port=6379):
             print(f'Accepted connection from {addr}')
             client_handler = threading.Thread(
                 target=handle_client_connection,
-                args=(client_socket,)
+                args=(client_socket, addr)
             )
             client_handler.start()
     except KeyboardInterrupt:
         print('\nShutting down server...')
+        logging_handler.log_server_event("Server shutting down (KeyboardInterrupt)")
     finally:
         print('Cleaning up resources...')
         # Stop the expiring store's cleanup thread
         store.stop()
         # Close the server socket
         server.close()
+        logging_handler.log_server_event("Server shutdown complete")
         print('Server shutdown complete.')
         
 if __name__ == '__main__':
